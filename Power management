@@ -1,1 +1,12 @@
+BATTERY SIZING
+The ideal battery must be:
+  	1. supply a high enough voltage and current to be able to easily power all components on the vehicle
+    2. be light so total weight is reduced, allowing for aster braking and more predictable cornering
+    3. be thin enough so the car can sit lower to the ground, reducing the CG height and hence improving the turn radius
 
+Hence we decided to use lithium polymer (Lipo) battery packs as they are generally lighter and smaller than lithium ion or double A battery packs of the same capacity and voltage.
+Lipo batteries are also widely available, coming in a wide range of voltages, current ratings and capacities, making it easier to find one that is optimal
+
+Characteristics of lipo batteries:
+  - A lipo battery has a maximum voltage of 4.2v per cell when fully charged and can be discharged down to a minimum voltage of approximately 3.0v, below which the battery becomes permanently damaged due to electrochemical effects.
+  - 
