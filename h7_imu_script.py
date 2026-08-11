@@ -21,8 +21,8 @@ print("BNO08x I2C connection : Done\n")
 bno.enable_feature(BNO_REPORT_ACCELEROMETER, 20)
 bno.enable_feature(BNO_REPORT_MAGNETOMETER,20 )
 bno.enable_feature(BNO_REPORT_GYROSCOPE,20 )
-bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR, 10)
-bno.set_quaternion_euler_vector(BNO_REPORT_GAME_ROTATION_VECTOR)
+bno.enable_feature(BNO_REPORT_ROTATION_VECTOR, 10)
+bno.set_quaternion_euler_vector(BNO_REPORT_ROTATION_VECTOR)
 
 print("BNO08x sensors enabling : Done\n")
 
