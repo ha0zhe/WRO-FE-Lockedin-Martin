@@ -38,6 +38,6 @@ while True:
     print("===================================")
     timer = ticks_ms()
     if cpt == 10 :
-        bno.tare ()
+        bno.tare
     if cpt % 100 == 0:
         average_delay = (timer - timer_origin) / cpt
