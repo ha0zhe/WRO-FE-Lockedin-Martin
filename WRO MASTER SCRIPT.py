@@ -24,7 +24,7 @@ def read_UART():
                 encoder_count = int(match.group(1))
                 tof0 = int(match.group(2))
                 tof1 = int(match.group(3))
-                wheel_rotations = encoder_count / (28*3) #divide by 28, since 7PPR encoder has 28 counts per rev. divide by 3, since gear ratio is 1:3
+                wheel_rotations = encoder_count // (28*3) #divide by 28, since 7PPR encoder has 28 counts per rev. divide by 3, since gear ratio is 1:3
             print(f"Parsed -> Encoder: {encoder_count}, TOF0: {tof0}, TOF1: {tof1}")
         else:
             print("Failed to parse string structure")
