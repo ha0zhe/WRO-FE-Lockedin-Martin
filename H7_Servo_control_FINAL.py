@@ -1,6 +1,6 @@
 from machine import PWM, Pin
 
-servo = PWM(Pin("P8"), freq=50, duty_ns=1_500_000)  # centre
+servo = PWM(Pin("P7"), freq=50, duty_ns=1_500_000)  # centre
 
 def set_position(angle):
     # angle: 0..180 degrees mapped to 1.0..2.0 ms
