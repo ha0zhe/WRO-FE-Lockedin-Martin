@@ -77,7 +77,7 @@ def read_IMU():
 
 from machine import PWM, Pin
 
-servo = PWM(Pin("P8"), freq=50, duty_ns=1_500_000)  # centre
+servo = PWM(Pin("P7"), freq=50, duty_ns=1_500_000)  # centre
 
 def set_position(angle):
     # angle: 0..180 degrees mapped to 1.0..2.0 ms
@@ -97,7 +97,7 @@ import time
 from machine import PWM, Pin
 
 dir_pin = Pin("P9", Pin.OUT)
-speed = PWM(Pin("P7"), freq=20_000, duty_u16=0)
+speed = PWM(Pin("P8"), freq=20_000, duty_u16=0)
 
 def drive(direction, speed_percent):
     dir_pin.value(direction)         # 0 or 1
