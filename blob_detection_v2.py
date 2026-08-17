@@ -27,7 +27,7 @@ def find_red():
     red_blobs = img.find_blobs([red_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     for b in red_blobs:
         img.draw_rectangle(b.rect, color=(255, 0, 0))
-        # img.draw_cross(b.cx, b.cy, color=(255, 0, 0))
+        img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         red_cx = b.cx
         red_cy = b.cx
         red_w = b.w
@@ -41,7 +41,7 @@ def find_green():
     green_blobs = img.find_blobs([green_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     for b in green_blobs:
         img.draw_rectangle(b.rect, color=(255, 0, 0))
-        # img.draw_cross(b.cx, b.cy, color=(255, 0, 0))
+        img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         green_cx = b.cx
         green_cy = b.cx
         green_w = b.w
@@ -56,9 +56,9 @@ def find_blue():
     blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     for b in blue_blobs:
         img.draw_rectangle(b.rect, color=(255, 0, 0))
-        # img.draw_cross(b.cx, b.cy, color=(255, 0, 0))
+        img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         blue_cx = b.cx
-        blue_cy = b.cy  # Corrected from b.cx
+        blue_cy = b.cy
         blue_w = b.w
         blue_h = b.h
         blue_rot = b.rotation
@@ -71,9 +71,9 @@ def find_orange():
     orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     for b in orange_blobs:
         img.draw_rectangle(b.rect, color=(255, 0, 0))
-        # img.draw_cross(b.cx, b.cy, color=(255, 0, 0))
+        img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         orange_cx = b.cx
-        orange_cy = b.cy  # Corrected from b.cx
+        orange_cy = b.cy
         orange_w = b.w
         orange_h = b.h
         orange_rot = b.rotation
@@ -85,9 +85,9 @@ def find_magenta():
     magenta_blobs = img.find_blobs([magenta_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     for b in magenta_blobs:
         img.draw_rectangle(b.rect, color=(255, 0, 0))
-        # img.draw_cross(b.cx, b.cy, color=(255, 0, 0))
+        img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         magenta_cx = b.cx
-        magenta_cy = b.cy  # Corrected from b.cx
+        magenta_cy = b.cy
         magenta_w = b.w
         magenta_h = b.h
         magenta_rot = b.rotation
