@@ -34,6 +34,7 @@ def find_red():
         red_h = b.h
         red_rot = b.rotation
         print(red_cx, red_cy, red_w, red_h, red_rot)
+    return red_blobs
 
 
 def find_green():
@@ -48,6 +49,7 @@ def find_green():
         green_h = b.h
         green_rot = b.rotation
         print(green_cx, green_cy, green_w, green_h, green_rot)
+    return green_blobs
 
 
 def find_blue():
@@ -62,6 +64,7 @@ def find_blue():
         blue_h = b.h
         blue_rot = b.rotation
         print(blue_cx, blue_cy, blue_w, blue_h, blue_rot)
+    return blue_blobs
 
 
 def find_orange():
@@ -76,6 +79,7 @@ def find_orange():
         orange_h = b.h
         orange_rot = b.rotation
         print(orange_cx, orange_cy, orange_w, orange_h, orange_rot)
+    return orange_blobs
 
 
 def find_magenta():
@@ -90,3 +94,4 @@ def find_magenta():
         magenta_h = b.h
         magenta_rot = b.rotation
         print(magenta_cx, magenta_cy, magenta_w, magenta_h, magenta_rot)
+    return magenta_blobs
