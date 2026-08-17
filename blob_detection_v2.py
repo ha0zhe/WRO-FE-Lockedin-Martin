@@ -29,7 +29,7 @@ def find_red():
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         red_cx = b.cx
-        red_cy = b.cx
+        red_cy = b.cy
         red_w = b.w
         red_h = b.h
         red_rot = b.rotation
@@ -43,7 +43,7 @@ def find_green():
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         green_cx = b.cx
-        green_cy = b.cx
+        green_cy = b.cy
         green_w = b.w
         green_h = b.h
         green_rot = b.rotation
