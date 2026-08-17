@@ -50,7 +50,6 @@ def find_green():
         print(green_cx, green_cy, green_w, green_h, green_rot)
 
 
-# Blue implementation
 def find_blue():
     img = csi0.snapshot()
     blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
@@ -65,7 +64,6 @@ def find_blue():
         print(blue_cx, blue_cy, blue_w, blue_h, blue_rot)
 
 
-# Orange implementation
 def find_orange():
     img = csi0.snapshot()
     orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
