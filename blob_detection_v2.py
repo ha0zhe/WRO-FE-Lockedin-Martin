@@ -16,6 +16,7 @@ cw = sw  # cropped width
 ch = sh//2  # cropped height
 csi0.window([0, 0, cw, ch])  # leave width as is, crop height to 50% (check irl)
 csi0.snapshot(time=2000)  # skip csi0.snapshot for 2000ms for sensor to stabilise
+roi_line = (0, 0, cw, ch//2)   # ROI for line detection (check irl)
 
 red_t = (0, 100, -23, 31, -32, 60)  # exmaple LAB threshold for red
 green_t = (0, 0, 0, 0, 0, 0)
@@ -23,13 +24,14 @@ blue_t = (1, 0, 0, 0, 0, 0)
 orange_t = (2, 0, 0, 0, 0, 0)
 magenta_t = (3, 0, 0, 0, 0, 0)
 
-roi_line = (0, 0, cw, ch//2)   # ROI for line detection (check irl)
+
+img = csi0.snapshot()  # call once at the start of every control loop
 
 
 def find_red():
-    img = csi0.snapshot()
-    red_blobs = img.find_blobs([red_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
-    for b in red_blobs:
+    red_blobs = img.find_blobs([red_t], x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+    if red_blobs:
+        b = red_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         red_cx = b.cx
@@ -38,13 +40,13 @@ def find_red():
         red_h = b.h
         red_rot = b.rotation
         print(red_cx, red_cy, red_w, red_h, red_rot)
-    return red_blobs
+    return b
 
 
 def find_green():
-    img = csi0.snapshot()
-    green_blobs = img.find_blobs([green_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
-    for b in green_blobs:
+    green_blobs = img.find_blobs([green_t], x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+    if green_blobs:
+        b = green_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         green_cx = b.cx
@@ -53,13 +55,13 @@ def find_green():
         green_h = b.h
         green_rot = b.rotation
         print(green_cx, green_cy, green_w, green_h, green_rot)
-    return green_blobs
+    return b
 
 
 def find_blue():
-    img = csi0.snapshot()
-    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
-    for b in blue_blobs:
+    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+    if blue_blobs:
+        b = blue_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         blue_cx = b.cx
@@ -68,13 +70,13 @@ def find_blue():
         blue_h = b.h
         blue_rot = b.rotation
         print(blue_cx, blue_cy, blue_w, blue_h, blue_rot)
-    return blue_blobs
+    return b
 
 
 def find_orange():
-    img = csi0.snapshot()
-    orange_blobs = img.find_blobs([orange_t], roi=roi_line, x_stride=4, y_stride=4, area_threshold=200, merge=True)
-    for b in orange_blobs:
+    orange_blobs = img.find_blobs([orange_t], roi=roi_line, x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+    if orange_blobs:
+        b = orange_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         orange_cx = b.cx
@@ -83,13 +85,13 @@ def find_orange():
         orange_h = b.h
         orange_rot = b.rotation
         print(orange_cx, orange_cy, orange_w, orange_h, orange_rot)
-    return orange_blobs
+    return b
 
 
 def find_magenta():
-    img = csi0.snapshot()
-    magenta_blobs = img.find_blobs([magenta_t], roi=roi_line, x_stride=4, y_stride=4, area_threshold=200, merge=True)
-    for b in magenta_blobs:
+    magenta_blobs = img.find_blobs([magenta_t], roi=roi_line, x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+    if magenta_blobs:
+        b = magenta_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
         magenta_cx = b.cx
@@ -98,4 +100,4 @@ def find_magenta():
         magenta_h = b.h
         magenta_rot = b.rotation
         print(magenta_cx, magenta_cy, magenta_w, magenta_h, magenta_rot)
-    return magenta_blobs
+    return b
