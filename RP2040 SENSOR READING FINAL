@@ -106,7 +106,6 @@ void loop()
     // Reset flags
     tof0_data_ready = false;
     tof1_data_ready = false;
-    
-    delay(500);
+
   }
 }
