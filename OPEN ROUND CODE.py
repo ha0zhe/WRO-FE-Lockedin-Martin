@@ -5,31 +5,35 @@ import math
 from bno08x import *
 import time
 from pid import PID
+import csi
 
 
 
 #loop counter (not just for imu)
-global cpt = 0
+global cpt
 #for uart
-global uart = None
-global buf = None
+global uart
+uart= None
+global buf
+buf = None
 #for imu
-global bno = None
-global tare = False
+global bno
+bno = None
+global tare
+tare = False
 #for servo
-global servo = None
+global servo
+servo = None
 #for motor driver
-global dir_pin = None
-global speed = None
+global dir_pin
+dir_pin = None
+global speed_pin
+speed_pin = None
 
-#LAB thresholds, roi
-global roi_line = (0, 0, cw, ch//2)   # ROI for line detection (check irl)
-global orange_t = (2, 0, 0, 0, 0, 0)
-global blue_t = (3,0,0,0,0,0)
 
-def find_blue():
-    global blue_t, roi_line
-    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+def find_blue(img, blue_t, roi_line):
+    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
+    b = None
     if blue_blobs:
         b = blue_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
@@ -42,21 +46,24 @@ def find_blue():
         print(blue_cx, blue_cy, blue_w, blue_h, blue_rot)
     return b
 
-
-def find_orange():
-    global orange_t, roi_line
-    orange_blobs = img.find_blobs([orange_t], roi=roi_line, x_stride=4, y_stride=4, area_threshold=200, merge=True, max_blobs=1)
+def find_orange(img, orange_t, roi_line):
+    orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
+    b = None
     if orange_blobs:
         b = orange_blobs[0]
         img.draw_rectangle(b.rect, color=(255, 0, 0))
         img.draw_cross((b.cx, b.cy), color=(255, 0, 0))
-        cx = b.cx
-        cy = b.cy
-        w = b.w
-        h = b.h
-        rot = b.rotation
-        print(cx, cy, w, h, rot)
+        orange_cx = b.cx
+        orange_cy = b.cy
+        orange_w = b.w
+        orange_h = b.h
+        orange_rot = b.rotation
+        print(orange_cx, orange_cy, orange_w, orange_h, orange_rot)
     return b
+
+
+
+
 
 def init_uart():
     global uart, buf
@@ -79,11 +86,11 @@ def read_uart():
                 tof0 = int(match.group(2))
                 tof1 = int(match.group(3))
                 wheel_rotations = encoder_count // (28*3) #divide by 28, since 7PPR encoder has 28 counts per rev. divide by 3, since gear ratio is 1:3
-            print(f"Parsed -> Encoder: {encoder_count}, TOF0: {tof0}, TOF1: {tof1}")
-            return tof0, tof1, encoder_count, wheel_rotations
+                print(f"Parsed -> Encoder: {encoder_count}, TOF0: {tof0}, TOF1: {tof1}")
+                return tof0, tof1, encoder_count, wheel_rotations
         else:
-            print("Failed to parse string structure")
-        
+            print("no valid data")
+            return None
 # EXAMPLE OF line_byte when printed ---- b'encoder count: 1250, tof0: 3400, tof1: 42\r'
 # EXAMPLE OF line_string ---- 'encoder count: 1250, tof0: 3400, tof1: 42'
 
@@ -94,13 +101,13 @@ def init_imu():
     bno = BNO08X(i2c1, debug=False)
     print("BNO08x I2C connection : Done\n")
     bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR, 10) #enable game rotation vector (no magnetometer) report
-    bno.set_quaternion_euler_vector(BNO_REPORT_GAME_ROTATION_VECTOR) 
+    bno.set_quaternion_euler_vector(BNO_REPORT_GAME_ROTATION_VECTOR)
     print("BNO08x sensors enabling : Done\n")
 
-    
+
 def read_imu():
     #time.sleep(0.5)
-    global cpt, tare_status
+    global cpt, tare
     print("cpt", cpt)
     R, T, P = bno.euler #roll, tilt, pan euler angle
     # print("Euler Angle\tX: {:+.3f}\tY: {:+.3f}\tZ: {:+.3f}".format(R, T, P))
@@ -111,26 +118,29 @@ def read_imu():
     return P
 
 def init_servo():
-    global servo = PWM(Pin("P7"), freq=50, duty_ns=1_500_000)  # centre
-    
+    global servo
+    servo = PWM(Pin("P7"), freq=50, duty_ns=1_500_000)  # centre
+
 def set_position(angle):
     # angle: 0..180 degrees mapped to 1.0..2.0 ms
-    pulse_us = 1000 + (angle * 1000) // 180
+    pulse_us = 1000 + int((angle * 1000) // 180)
     servo.duty_ns(pulse_us * 1000)
 
 #EXAMPLES
 #set_position(25)	# full right
 #set_position(135)    # full left
 #set_position(80)     # centre
-    
+
 
 def init_driver():
-    global dir_pin = Pin("P9", Pin.OUT)
-    global speed = PWM(Pin("P8"), freq=20_000, duty_u16=0)
+    global dir_pin
+    dir_pin = Pin("P9", Pin.OUT)
+    global speed_pin
+    speed_pin = PWM(Pin("P6"), freq=20_000, duty_u16=0)
 
 def drive(direction, speed_percent):
     dir_pin.value(direction)         # 0 or 1
-    speed.duty_u16((speed_percent*65535)//100)     # duty cycle goes from 0..65535, speed_percent scales to 1-100
+    speed_pin.duty_u16((speed_percent*65535)//100)     # duty cycle goes from 0..65535, speed_percent scales to 1-100
 
 #EXAMPLES
 #drive(0, 100)     # direction A at full speed
@@ -138,6 +148,62 @@ def drive(direction, speed_percent):
 
 #BRAKING?
 #speed.duty_u16(0)   # stop
+
+
+
+def control_loop(heading, setpoint_heading, base_setpoint_heading, left_tof, right_tof, left_dmin, right_dmin, left_dmin_count, right_dmin_count, pid_object):
+    if left_tof <= left_dmin:
+        left_dmin_count +=1
+        if left_dmin_count == 15:
+            base_setpoint_heading = setpoint_heading
+            setpoint_heading += 5
+    else:
+
+        left_dmin_count = 0
+
+    if right_tof <= right_dmin:
+        right_dmin_count +=1
+        if right_dmin_count == 15:
+            base_setpoint_heading = setpoint_heading
+            setpoint_heading -= 5
+    else:
+
+        right_dmin_count = 0
+    error = setpoint_heading - heading
+    error = (setpoint_heading - heading + 180) % 360 - 180 #normalise to -180 to 180
+    output = pid_object.get_pid(error, 1) #second input is the scaling factor applied to the gains
+    servo_angle = 80 + output  #servo centred at 80
+    servo_angle = max(25, min(135, servo_angle))#clamping to keep servo_angle within range of motion of 25 to 135.
+    return servo_angle, left_dmin_count, right_dmin_count, setpoint_heading, base_setpoint_heading
+
+
+l_tof, r_tof, encoder, wheel_rot = 200, 200, 0, 0 #placeholder before UART data comes in
+#setup pid controllers (TUNE THE GAINS)
+kp = 2
+ki = 0.00
+kd = 1
+imu_pid = PID(p=kp, i=ki, d=kd, imax=69)
+l_dmin_count = 0
+r_dmin_count = 0
+l_dmin = 0
+r_dmin = 0
+stpt_hdg = 0
+base_stpt_hdg = 0
+
+#turn state
+clockwise = False
+turn_count = 0
+straight_speed = 100
+turn_speed = 50
+orange_count = 0
+blue_count = 0
+speed = 0
+#end state
+last_section = False
+
+#LAB thresholds, roi
+orange_t = (0, 100, -18, 17, 17, 68)
+blue_t = (0, 100, -29, 6, -34, -8)
 
 # camera setup
 clock = time.clock()
@@ -151,8 +217,10 @@ sw = csi0.width()  # sensor width (in pixels)
 sh = csi0.height()  # sensor height
 cw = sw  # cropped width
 ch = sh//2  # cropped height
+roi_line = (0, 0, cw, ch//4)   # ROI for line detection (check irl)
 csi0.window([0, 0, cw, ch])  # leave width as is, crop height to 50% (check irl)
 csi0.snapshot(time=2000)  # skip csi0.snapshot for 2000ms for sensor to stabilise
+cpt = 0
 
 # peripherals init
 init_uart()
@@ -160,66 +228,60 @@ init_imu()
 init_servo()
 init_driver()
 
-
-#setup pid controllers (TUNE THE GAINS)
-kp = 1
-ki = 1
-kd = 1
-imu_pid = PID(p=kp, i=ki, d=kd, imax=69)
-kp1 = 1
-ki1 = 1
-kd1 = 1
-cam_pid = PID(p=kp1, i=ki1, d=kd1, imax=67)
-
-setpoint_heading = 0
-base_setpoint_heading = 0
-l_dmin_count = 0
-r_dmin_count = 0
-#turn state
-CW = False
-
-while true:
+while True:
     cpt+=1  #counter
-
+    img = csi0.snapshot()
     #get data
-    if tare = True:
-        heading = read_imu()
-    l_tof = read_uart()[0]  #left TOF
-    r_tof = read_uart()[1]  #right TOF
-    encoder = read_uart()[2]  #encoder count
-    wheel_rot = read_uart()[3] #wheel rotations
-    orange = find_orange() #gives orange blob object
-    blue = find_blue() #gives blue blob object
-    
-#go straight
-    if l_tof <= dmin:
-        l_dmin_count +=1
-        if l_dmin_count == 15:
-            base_setpoint_heading = setpoint_heading
-            setpoint_heading += 5
-    else:
-        setpoint_heading = base_setpoint_heading
-        l_dmin_count = 0
+    hdg = read_imu()
+    uart_data = read_uart()
+    if uart_data:
+        (l_tof, r_tof, encoder, wheel_rot) = uart_data  #left TOF, right TOF, encoder count, wheel rotations
+    orange = find_orange(img, orange_t, roi_line) #gives orange blob object
+    blue = find_blue(img, blue_t, roi_line) #gives blue blob object
 
-    if r_tof <= dmin:
-        r_dmin_count +=1
-        if r_dmin_count == 15:
-            base_setpoint_heading = setpoint_heading
-            setpoint_heading -= 5
-    else:
-        setpoint_heading = base_setpoint_heading
-        r_dmin_count = 0
-    imu_error = setpoint_heading - heading
-    output = imu_pid.get_pid(imu_error, 1) #second input is the scaling factor applied to the gains
-    servo_angle = 80 + output  #servo centred at 80  # scale output as needed to get the servo angle
-    set_position(servo_angle)
-    drive(0, 100)
+#driving
+    stpt_hdg = stpt_hdg % 360
+    print("stpt_hdg: ", stpt_hdg)
+    (angle, l_dmin_count, r_dmin_count, stpt_hdg, base_stpt_hdg) = control_loop(hdg, stpt_hdg, base_stpt_hdg, l_tof, r_tof, l_dmin, r_dmin, l_dmin_count ,r_dmin_count, imu_pid)
+    set_position(angle)
+    print("angle: ", angle)
+    drive(0, speed)
 
-    
-    
-    
-    
-    
+#turning
+    if orange:
+        orange_count += 1
+        if orange_count == 15: #so 1 rogue frame wont trigger the turn sequence
+            clockwise = True
+            stpt_hdg = stpt_hdg + 90
+            turn_count += 1
+            speed = 0 # turn_speed
+    else:
+        orange_count = 0
+        speed = straight_speed
+
+    if not clockwise:
+        if blue:
+            blue_count += 1
+            if blue_count == 15:
+                stpt_hdg = stpt_hdg - 90
+                turn_count += 1
+                speed = turn_speed
+        else:
+            blue_count = 0
+            speed = straight_speed
+
+#end sequence
+    if not last_section:
+        start_encoder = encoder
+    if turn_count == 13 and abs (hdg - stpt_hdg) <= 5:
+        last_section = True
+        encoder_change = encoder - start_encoder
+        speed = straight_speed // 2
+        if encoder_change >= 2000:
+            speed = 0
+
+
+
 
 
 
