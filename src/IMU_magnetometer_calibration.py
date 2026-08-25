@@ -1,10 +1,4 @@
-# raw_sensors.py
-#
-# BNO08x Micropython I2C example program
-# Calibration of Magnetometer magnetic accuracy report
-#
-# Original Code from Adafruit CircuitPython Library
-# Bryan Siepert for Adafruit Industries
+# NOT NEEDED IF MAGNETOMETER IS UNUSED
 
 from time import ticks_ms, ticks_diff, sleep
 
