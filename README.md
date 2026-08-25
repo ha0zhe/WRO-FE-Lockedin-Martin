@@ -13,7 +13,7 @@ Welcome to the github repository of team Lockedin Martin for WRO 2026.
 
 The Wro FE competition consists of 2 rounds: the open round and the obstacle round. in the open round, the vehicle must autonomously drive 3 laps on a track with no obstacles and stop at its starting position. in the obstacle round, the vehicle must navigate 3 laps on a track containing red and green traffic signs, turning right when encountering a red sign and left when encountering a green sign. For the obstacle round, the vehicle must also autonomously parallel-park in a parking lot that is demarcated by magenta blocks. 
 
-All the information about the vehicle, including technical specifications, the design process and how it works, can be found in the engineering journal in the docs folder. The wiring diagram can be found in the schemes folder, the CAD models under the models folder, and the code in the src folder. 
+All the information about the vehicle, including technical specifications, the design process and how it works, can be found in the engineering journal. The wiring diagram can be found in the schemes folder, the CAD models under the models folder, and the code in the src folder. 
 
 Our team uses  dual microcontroller setup for this competition: the Openmv H7 plus for blob detection and navigation. and the RP2040 zero for sensor reading. code for specific functions of the H7, such as UART reading and blob detection, can be found in the files with names beginning with H7_ in the src folder. the RP2040 sensor reading code can be found in the same folder, compiled in one script.
 
@@ -37,3 +37,9 @@ Openmv IDE's threshold is used to tune the CIELAB color thresholds used in blob 
 For the code to be saved on the H7, you must save it on the H7's internal memory as main.py. This can be done manually, through dragging and dropping files in file manager, or it can be done in the Openmv IDE in File --> save script under Openmv cam
 
 # Tips and tricks
+
+1. Make sure all pin headers are tightly conected, especially for I2C. loose connections will degrade the high frequency clock signal and prevent it from working
+2. Make sure to tighten all screws and nuts before testing. not doing so will result in inconsistent turn radii.
+3. Make sure to wipe the TOF lens before testing it, to prevent oils from interfering with the reading
+4. When tuning the color thresholds, use the narrowest thresholds that can still correctly identify the blocks under varying lighting conditions (e.g on different positions on the track)
+5. do not touch the IMU while it is being tared.
