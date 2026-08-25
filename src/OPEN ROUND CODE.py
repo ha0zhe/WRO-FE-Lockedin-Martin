@@ -19,8 +19,6 @@ buf = None
 #for imu
 global bno
 bno = None
-global tare
-tare = False
 #for servo
 global servo
 servo = None
@@ -30,8 +28,7 @@ dir_pin = None
 global speed_pin
 speed_pin = None
 
-
-def find_blue(img, blue_t, roi_line):
+def find_blue(img, blue_t):
     blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     b = None
     if blue_blobs:
@@ -46,7 +43,7 @@ def find_blue(img, blue_t, roi_line):
         print(blue_cx, blue_cy, blue_w, blue_h, blue_rot)
     return b
 
-def find_orange(img, orange_t, roi_line):
+def find_orange(img, orange_t):
     orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
     b = None
     if orange_blobs:
@@ -105,17 +102,17 @@ def init_imu():
     print("BNO08x sensors enabling : Done\n")
 
 
-def read_imu():
+def read_imu(tare_state):
     #time.sleep(0.5)
-    global cpt, tare
+    global cpt
     print("cpt", cpt)
     R, T, P = bno.euler #roll, tilt, pan euler angle
     # print("Euler Angle\tX: {:+.3f}\tY: {:+.3f}\tZ: {:+.3f}".format(R, T, P))
     print("heading = ", P)
     if cpt == 10 : #TARES AT THE 10TH LOOP
         bno.tare #Tareing: resets R,T,P to 0,0,0
-        tare = True
-    return P
+        tare_state = True
+    return P, tare_state
 
 def init_servo():
     global servo
@@ -139,7 +136,7 @@ def init_driver():
     speed_pin = PWM(Pin("P6"), freq=20_000, duty_u16=0)
 
 def drive(direction, speed_percent):
-    dir_pin.value(direction)         # 0 or 1
+    dir_pin.value(direction)         # 0 fwd, 1 reverse
     speed_pin.duty_u16((speed_percent*65535)//100)     # duty cycle goes from 0..65535, speed_percent scales to 1-100
 
 #EXAMPLES
@@ -151,50 +148,56 @@ def drive(direction, speed_percent):
 
 
 
-def control_loop(heading, setpoint_heading, base_setpoint_heading, left_tof, right_tof, left_dmin, right_dmin, left_dmin_count, right_dmin_count, pid_object):
-    if left_tof <= left_dmin:
-        left_dmin_count +=1
-        if left_dmin_count == 15:
-            base_setpoint_heading = setpoint_heading
-            setpoint_heading += 5
-    else:
-
-        left_dmin_count = 0
-
-    if right_tof <= right_dmin:
-        right_dmin_count +=1
-        if right_dmin_count == 15:
-            base_setpoint_heading = setpoint_heading
-            setpoint_heading -= 5
-    else:
-
-        right_dmin_count = 0
+def control_loop(wall_avoidance, heading, setpoint_heading, base_setpoint_heading, left_tof, right_tof, left_dmin, right_dmin, left_dmin_count, right_dmin_count, pid_object):
     error = setpoint_heading - heading
     error = (setpoint_heading - heading + 180) % 360 - 180 #normalise to -180 to 180
     output = pid_object.get_pid(error, 1) #second input is the scaling factor applied to the gains
     servo_angle = 80 + output  #servo centred at 80
-    servo_angle = max(25, min(135, servo_angle))#clamping to keep servo_angle within range of motion of 25 to 135.
-    return servo_angle, left_dmin_count, right_dmin_count, setpoint_heading, base_setpoint_heading
-
+    servo_angle = max(15, min(145, servo_angle))#clamping to keep servo_angle within range of motion of 15 to 145.
+    if wall_avoidance == False:
+        base_setpoint_heading = setpoint_heading
+    if left_tof <= left_dmin:
+        right_dmin_count = 0
+        left_dmin_count +=1
+        if left_dmin_count == 3:
+            wall_avoidance = True
+            setpoint_heading -= 10
+    elif right_tof <= right_dmin:
+        left_dmin_count = 0
+        right_dmin_count +=1
+        if right_dmin_count == 3:
+            wall_avoidance = True
+            setpoint_heading += 10
+    else:
+        wall_avoidance = False
+        left_dmin_count = 0
+        right_dmin_count = 0
+        setpoint_heading = base_setpoint_heading
+    return wall_avoidance, servo_angle, left_dmin_count, right_dmin_count, setpoint_heading, base_setpoint_heading
 
 l_tof, r_tof, encoder, wheel_rot = 200, 200, 0, 0 #placeholder before UART data comes in
 #setup pid controllers (TUNE THE GAINS)
-kp = 2
+kp = 1
 ki = 0.00
-kd = 1
+kd = 0
 imu_pid = PID(p=kp, i=ki, d=kd, imax=69)
 l_dmin_count = 0
 r_dmin_count = 0
-l_dmin = 0
-r_dmin = 0
+l_dmin = 100
+r_dmin = 100
 stpt_hdg = 0
 base_stpt_hdg = 0
 
+#tare state
+tared = False
+#control loop
+wall_avoidance = False
 #turn state
 clockwise = False
+counterclockwise = False
 turn_count = 0
-straight_speed = 100
-turn_speed = 50
+straight_speed = 80
+turn_speed = 80
 orange_count = 0
 blue_count = 0
 speed = 0
@@ -203,7 +206,7 @@ last_section = False
 
 #LAB thresholds, roi
 orange_t = (0, 100, -18, 17, 17, 68)
-blue_t = (0, 100, -29, 6, -34, -8)
+blue_t = (0, 100, -1, 17, -44, -12)
 
 # camera setup
 clock = time.clock()
@@ -217,8 +220,8 @@ sw = csi0.width()  # sensor width (in pixels)
 sh = csi0.height()  # sensor height
 cw = sw  # cropped width
 ch = sh//2  # cropped height
-roi_line = (0, 0, cw, ch//4)   # ROI for line detection (check irl)
-csi0.window([0, 0, cw, ch])  # leave width as is, crop height to 50% (check irl)
+roi_line = (0, 0, cw, ch)   # ROI for line detection (check irl)
+csi0.window([0, ch, cw, ch])  # leave width as is, crop height to 50% (check irl)
 csi0.snapshot(time=2000)  # skip csi0.snapshot for 2000ms for sensor to stabilise
 cpt = 0
 
@@ -228,42 +231,54 @@ init_imu()
 init_servo()
 init_driver()
 
-while True:
+button = Pin("P5", Pin.IN, Pin.PULL_UP) #start button, connect between P5 and GND
+start = False
+if button.value() == 0:
+    start = True
+else:
+    start = False
+
+while start:
     cpt+=1  #counter
     img = csi0.snapshot()
     #get data
-    hdg = read_imu()
+    hdg, tared = read_imu(tared)
     uart_data = read_uart()
     if uart_data:
         (l_tof, r_tof, encoder, wheel_rot) = uart_data  #left TOF, right TOF, encoder count, wheel rotations
-    orange = find_orange(img, orange_t, roi_line) #gives orange blob object
-    blue = find_blue(img, blue_t, roi_line) #gives blue blob object
+    orange = find_orange(img, orange_t) #gives orange blob object
+    blue = find_blue(img, blue_t) #gives blue blob object
 
 #driving
-    stpt_hdg = stpt_hdg % 360
-    print("stpt_hdg: ", stpt_hdg)
-    (angle, l_dmin_count, r_dmin_count, stpt_hdg, base_stpt_hdg) = control_loop(hdg, stpt_hdg, base_stpt_hdg, l_tof, r_tof, l_dmin, r_dmin, l_dmin_count ,r_dmin_count, imu_pid)
-    set_position(angle)
-    print("angle: ", angle)
-    drive(0, speed)
+    if tared:
+        stpt_hdg = stpt_hdg % 360
+        print("stpt_hdg: ", stpt_hdg)
+        (wall_avoidance, angle, l_dmin_count, r_dmin_count, stpt_hdg, base_stpt_hdg) = control_loop(wall_avoidance, hdg, stpt_hdg, base_stpt_hdg, l_tof, r_tof, l_dmin, r_dmin, l_dmin_count ,r_dmin_count, imu_pid)
+        set_position(angle)
+        print("angle: ", angle)
+        drive(0, speed)
 
 #turning
-    if orange:
-        orange_count += 1
-        if orange_count == 15: #so 1 rogue frame wont trigger the turn sequence
-            clockwise = True
-            stpt_hdg = stpt_hdg + 90
-            turn_count += 1
-            speed = 0 # turn_speed
-    else:
-        orange_count = 0
-        speed = straight_speed
+    if not counterclockwise:
+        if orange:
+            orange_count += 1
+            if orange_count == 3: #so 1 rogue frame wont trigger the turn sequence
+                clockwise = True
+                counterclockwise = False
+                stpt_hdg = stpt_hdg - 90
+                turn_count += 1
+                speed = turn_speed
+        else:
+            orange_count = 0
+            speed = straight_speed
 
     if not clockwise:
         if blue:
             blue_count += 1
-            if blue_count == 15:
-                stpt_hdg = stpt_hdg - 90
+            if blue_count == 3:
+                counterclockwise = True
+                clockwise = False
+                stpt_hdg = stpt_hdg + 90
                 turn_count += 1
                 speed = turn_speed
         else:
@@ -273,11 +288,11 @@ while True:
 #end sequence
     if not last_section:
         start_encoder = encoder
-    if turn_count == 13 and abs (hdg - stpt_hdg) <= 5:
+    if turn_count == 13:
         last_section = True
         encoder_change = encoder - start_encoder
         speed = straight_speed // 2
-        if encoder_change >= 2000:
+        if encoder_change >= 200:
             speed = 0
 
 
