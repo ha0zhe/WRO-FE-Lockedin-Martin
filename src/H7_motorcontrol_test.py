@@ -2,7 +2,7 @@ import time
 from machine import PWM, Pin
 
 dir_pin = Pin("P9", Pin.OUT)
-speed = PWM(Pin("P8"), freq=20_000, duty_u16=0)
+speed = PWM(Pin("P6"), freq=20_000, duty_u16=0)
 
 def drive(direction, speed_percent):
     dir_pin.value(direction)         # 0 or 1
