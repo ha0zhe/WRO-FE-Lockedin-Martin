@@ -36,9 +36,30 @@ Openmv IDE's threshold is used to tune the CIELAB color thresholds used in blob 
 
 For the code to be saved on the H7, you must save it on the H7's internal memory as main.py. This can be done manually, through dragging and dropping files in file manager, or it can be done in the Openmv IDE in File --> save script under Openmv cam
 
+To setup Thonny for Openmv H7 plus:
+1. Install Thonny, then Run → Select interpreter.
+2. Choose "MicroPython (generic)" from the interpreter dropdown (there's no dedicated OpenMV entry — generic is correct since it just      talks raw REPL over serial).
+3. Pick the port your H7 Plus enumerates as (or leave on auto-detect if it's the only device attached).
+4. Click OK — Thonny's shell should show the >>> REPL prompt, and the Files pane will let you browse/edit files directly on the camera's internal flash or SD card.
+
+To setup Openmv Ide for Openmv H7 plus:
+1. Download and install OpenMV IDE from openmv.io/pages/download — no separate board package needed, unlike Arduino.
+2. Plug in the H7 Plus via USB, click Connect (bottom-left plug icon).
+3. If prompted with a firmware update on first connect — accept it. It'll ask whether to erase the internal filesystem: say No if you      have scripts stored on internal flash you want to keep, otherwise Yes for a clean start. It flashes over DFU automatically (green       LED fades in/out during the process) and reconnects when done.
+4. Open helloworld_1.py or your own script, hit the Play (bottom-left run) button — you'll get a live frame buffer view alongside           serial console output, which is what makes it good for tuning your blob-detection thresholds.
+
+To setup Arduino Ide for RP2040 Zero:
+1. Add the board package URL. Open Arduino IDE → File → Preferences → paste this into "Additional Boards Manager URLs":
+   https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+   (If you already have another URL      there, e.g. for ESP32, separate them with a comma.)
+3. Install the core. Tools → Board → Boards Manager → search "pico" → install "Raspberry Pi Pico/RP2040/RP2350" by Earle F. Philhower,     III. This is the community core (not the official Arduino-Mbed one) — it's the one with full RP2040 peripheral support (PIO,            multicore, etc.) and is what you're already using per your Serial/Serial1/Serial2 debugging.
+4. Select the board. Tools → Board → Raspberry Pi RP2040 Boards → Waveshare RP2040 Zero. If your installed core version doesn't list it    specifically, "Generic RP2040" also works fine for a Zero.
+5. Upload. Hold BOOT, plug in via USB (or hold BOOT and tap RESET if already connected), release once the RPI-RP2 drive appears.           Arduino should now show a COM/tty port — select it and upload normally. After the first proper Arduino sketch is flashed, subsequent    uploads happen automatically over USB without needing BOOT mode again. If not, hold down the boot button, connect the RP2040, select
+   and connect to the DFU port n the tools menu. After uploading the code, you should be able to connect via COM port in the same          tools menu
+   
 # Tips and tricks
 
-1. Make sure all pin headers are tightly conected, especially for I2C. loose connections will degrade the high frequency clock signal and prevent it from working
+1. Make sure all pin headers are tightly connected, especially for I2C. loose connections will degrade the high frequency clock signal and prevent it from working
 2. Make sure to tighten all screws and nuts before testing. not doing so will result in inconsistent turn radii.
 3. Make sure to wipe the TOF lens before testing it, to prevent oils from interfering with the reading
 4. When tuning the color thresholds, use the narrowest thresholds that can still correctly identify the blocks under varying lighting conditions (e.g on different positions on the track)
