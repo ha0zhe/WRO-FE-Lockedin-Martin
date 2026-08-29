@@ -29,7 +29,7 @@ global speed_pin
 speed_pin = None
 
 def find_blue(img, blue_t):
-    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
+    blue_blobs = img.find_blobs([blue_t], x_stride=4, y_stride=4, area_threshold=2000, merge=True)
     b = None
     if blue_blobs:
         b = blue_blobs[0]
@@ -44,7 +44,7 @@ def find_blue(img, blue_t):
     return b
 
 def find_orange(img, orange_t):
-    orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=200, merge=True)
+    orange_blobs = img.find_blobs([orange_t], x_stride=4, y_stride=4, area_threshold=2000, merge=True)
     b = None
     if orange_blobs:
         b = orange_blobs[0]
@@ -196,8 +196,8 @@ wall_avoidance = False
 clockwise = False
 counterclockwise = False
 turn_count = 0
-straight_speed = 80
-turn_speed = 80
+straight_speed = 50
+turn_speed = 50
 orange_count = 0
 blue_count = 0
 speed = 0
@@ -205,8 +205,8 @@ speed = 0
 last_section = False
 
 #LAB thresholds, roi
-orange_t = (0, 100, -18, 17, 17, 68)
-blue_t = (0, 100, -1, 17, -44, -12)
+orange_t = (0, 58, -8, 127, 12, 55)
+blue_t = (0, 46, -8, 5, -32, -11)
 
 # camera setup
 clock = time.clock()
@@ -231,14 +231,14 @@ init_imu()
 init_servo()
 init_driver()
 
-button = Pin("P5", Pin.IN, Pin.PULL_UP) #start button, connect between P5 and GND
+button = Pin("P2", Pin.IN, Pin.PULL_UP) #start button, connect between P5 and GND
 start = False
 if button.value() == 0:
     start = True
 else:
     start = False
 
-while start:
+while not start:
     cpt+=1  #counter
     img = csi0.snapshot()
     #get data
@@ -288,7 +288,7 @@ while start:
 #end sequence
     if not last_section:
         start_encoder = encoder
-    if turn_count == 13:
+    if turn_count == 12:
         last_section = True
         encoder_change = encoder - start_encoder
         speed = straight_speed // 2
